@@ -21,9 +21,11 @@ export class HomeScreen extends PureComponent {
       gridModalVisibility: false,
       ModalVisibleStatus: false,
     };
+    this.page = 0;
     this.offset = 24;
     this.timeout = null;
   }
+
   componentDidMount() {
     this.props.navigation.setOptions({
       headerRight: () => (
@@ -45,22 +47,29 @@ export class HomeScreen extends PureComponent {
 
   onChange = search => {
     this.timeout && clearTimeout(this.timeout);
-    this.setState({ search, page: 0, imageList: [] }, () => {
-      this.timeout = setTimeout(() => {
-        this.search();
-      }, 500);
+    this.setState({ search, imageList: [] }, () => {
+      if (search.length > 0)
+        this.timeout = setTimeout(() => {
+          this.page = 1;
+          this.search();
+        }, 500);
     });
   };
 
-  search = async () => {
-    const { page, search } = this.state;
+  search = async (loadMore = false) => {
+    const { search } = this.state;
     try {
-      let result = await searchImages(search, page + 1, this.offset);
-      if (result.data && result.data.photos)
-        this.setState(prevState => ({
-          page: prevState.page + 1,
-          imageList: prevState.imageList.concat(result.data.photos.photo),
-        }));
+      let result = await searchImages(search, this.page, this.offset);
+
+      if (result.data && result.data.photos) {
+        loadMore
+          ? this.setState(prevState => ({
+              imageList: prevState.imageList.concat(result.data.photos.photo),
+            }))
+          : this.setState({
+              imageList: result.data.photos.photo,
+            });
+      }
     } catch (e) {
       alert('API not reachable');
     }
@@ -129,7 +138,10 @@ export class HomeScreen extends PureComponent {
               alignContent: 'center',
               alignItems: 'center',
             }}
-            onEndReached={this.search}
+            onEndReached={() => {
+              this.page = this.page + 1;
+              this.search(true);
+            }}
             onEndReachedThreshold={0.8}
           />
         ) : null}
