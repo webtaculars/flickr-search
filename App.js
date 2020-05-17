@@ -1,9 +1,7 @@
 import 'react-native-gesture-handler';
 
 import React from 'react';
-import { StyleSheet, ScrollView, View, TouchableOpacity } from 'react-native';
 
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { HomeScreen } from './src/screens/home';
@@ -17,7 +15,13 @@ const App = () => {
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ title: 'Flickr Search' }}
+          options={{
+            title: 'Flickr Search',
+            headerStyle: {
+              backgroundColor: '#f4511e',
+            },
+            headerTintColor: '#fff',
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>
