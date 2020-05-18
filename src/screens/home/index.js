@@ -1,14 +1,23 @@
 import React, { PureComponent } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
-
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  Text,
+  AsyncStorage,
+  TouchableOpacity,
+} from 'react-native';
 import { Input, Button } from 'react-native-elements';
 import { Colors } from 'react-native/Libraries/NewAppScreen';
 import { searchImages } from '../../services/home';
 import FastImage from 'react-native-fast-image';
 import { width } from '../../utils/device';
 import { gridList } from '../../utils/grid';
-import Icon from 'react-native-vector-icons/Fontisto';
+import Fontisto from 'react-native-vector-icons/Fontisto';
+import Feather from 'react-native-vector-icons/Feather';
 import ModalList from '../../components/common/ModalList';
+import { saveToDB, readFromDB } from '../../utils/offline';
+import constants from '../../constants';
 
 export class HomeScreen extends PureComponent {
   constructor(props) {
@@ -20,14 +29,16 @@ export class HomeScreen extends PureComponent {
       page: 0,
       gridModalVisibility: false,
       ModalVisibleStatus: false,
+      searchHistory: [],
     };
     this.page = 0;
     this.offset = 24;
     this.timeout = null;
   }
 
-  componentDidMount() {
-    this.props.navigation.setOptions({
+  componentDidMount = async () => {
+    const { navigation } = this.props;
+    navigation.setOptions({
       headerRight: () => (
         <Button
           containerStyle={{
@@ -38,12 +49,22 @@ export class HomeScreen extends PureComponent {
           }}
           buttonStyle={{ backgroundColor: '#f4511e' }}
           titleStyle={{ fontSize: 18 }}
-          icon={<Icon name="nav-icon-grid" size={18} color="white" />}
+          icon={<Fontisto name="nav-icon-grid" size={18} color="white" />}
           onPress={this.gridModalToggle}
         />
       ),
     });
-  }
+    this.loadHistory();
+  };
+
+  loadHistory = async () => {
+    let data = await AsyncStorage.getItem(constants.SEARCH_HISTORY);
+    if (data) {
+      this.setState({
+        searchHistory: JSON.parse(data),
+      });
+    }
+  };
 
   onChange = search => {
     this.timeout && clearTimeout(this.timeout);
@@ -66,9 +87,19 @@ export class HomeScreen extends PureComponent {
           ? this.setState(prevState => ({
               imageList: prevState.imageList.concat(result.data.photos.photo),
             }))
-          : this.setState({
-              imageList: result.data.photos.photo,
-            });
+          : this.setState(
+              prevState => ({
+                imageList: result.data.photos.photo,
+                searchHistory: prevState.searchHistory.concat(search),
+              }),
+              () => {
+                saveToDB(search, this.state.imageList);
+                AsyncStorage.setItem(
+                  constants.SEARCH_HISTORY,
+                  JSON.stringify(this.state.searchHistory),
+                );
+              },
+            );
       }
     } catch (e) {
       alert('API not reachable');
@@ -76,6 +107,8 @@ export class HomeScreen extends PureComponent {
   };
 
   keyExtractor = (item, index) => index.toString();
+
+  keyExtractorHistory = (item, index) => index.toString();
 
   renderItem = ({ item: { farm, server, id, secret } }) => {
     const { column } = this.state;
@@ -93,6 +126,48 @@ export class HomeScreen extends PureComponent {
     );
   };
 
+  renderHistory = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginVertical: 5,
+        }}
+        onPress={() =>
+          this.setState(
+            {
+              search: item,
+            },
+            () => {
+              this.search(item);
+            },
+          )
+        }>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+          <Fontisto
+            name="clock"
+            size={18}
+            color={constants.Colors.theme}
+            style={{ marginHorizontal: 20 }}
+          />
+          <Text style={{ fontSize: 18 }}>{item}</Text>
+        </View>
+        <Feather
+          name="arrow-up-left"
+          size={25}
+          color={constants.Colors.theme}
+          style={{ marginHorizontal: 10 }}
+        />
+      </TouchableOpacity>
+    );
+  };
+
   setGrid = item => {
     this.setState({ column: item.column, gridModalVisibility: false });
   };
@@ -104,7 +179,13 @@ export class HomeScreen extends PureComponent {
   };
 
   render() {
-    const { search, imageList, column, gridModalVisibility } = this.state;
+    const {
+      search,
+      imageList,
+      column,
+      gridModalVisibility,
+      searchHistory,
+    } = this.state;
     return (
       <View style={styles.body}>
         <View
@@ -144,7 +225,14 @@ export class HomeScreen extends PureComponent {
             }}
             onEndReachedThreshold={0.8}
           />
-        ) : null}
+        ) : (
+          <FlatList
+            keyExtractor={this.keyExtractorHistory}
+            data={searchHistory}
+            renderItem={this.renderHistory}
+            contentContainerStyle={{}}
+          />
+        )}
       </View>
     );
   }
