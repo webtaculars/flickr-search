@@ -1,5 +1,7 @@
 import React from 'react';
 import { Overlay, ListItem } from 'react-native-elements';
+import Feather from 'react-native-vector-icons/Feather';
+import constants from '../../constants';
 
 const ModalList = props => {
   const toggleOverlay = () => {
@@ -16,10 +18,25 @@ const ModalList = props => {
           <ListItem
             key={i}
             title={item.title}
-            bottomDivider
             containerStyle={{
               width: '100%',
             }}
+            rightIcon={
+              <Feather
+                name="check"
+                size={24}
+                style={
+                  props.selected === item.column ? {} : { display: 'none' }
+                }
+                color={constants.Colors.theme}
+                onPress={() => {
+                  if (search.length > 0) {
+                    this.page = 1;
+                    this.search();
+                  }
+                }}
+              />
+            }
             onPress={() => {
               props.onPress(item);
             }}

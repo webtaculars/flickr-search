@@ -233,6 +233,7 @@ export class HomeScreen extends PureComponent {
           onPress={this.setGrid}
           visibility={gridModalVisibility}
           setVisibility={this.gridModalToggle}
+          selected={column}
         />
         {imageList.length > 0 ? (
           <FlatList
