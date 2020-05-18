@@ -85,9 +85,14 @@ export class HomeScreen extends PureComponent {
         result = await searchImages(search, this.page, this.offset);
         if (result.data && result.data.photos) {
           loadMore
-            ? this.setState(prevState => ({
-                imageList: prevState.imageList.concat(result.data.photos.photo),
-              }))
+            ? this.setState(
+                prevState => ({
+                  imageList: prevState.imageList.concat(
+                    result.data.photos.photo,
+                  ),
+                }),
+                () => saveToDB(search, this.state.imageList),
+              )
             : this.setState(
                 prevState => ({
                   imageList: result.data.photos.photo,
@@ -148,7 +153,8 @@ export class HomeScreen extends PureComponent {
               search: item,
             },
             () => {
-              this.search(item);
+              this.page = 1;
+              this.search();
             },
           )
         }>
