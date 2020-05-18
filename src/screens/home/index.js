@@ -34,7 +34,6 @@ export class HomeScreen extends PureComponent {
     };
     this.page = 0;
     this.offset = 24;
-    this.timeout = null;
   }
 
   componentDidMount = async () => {
@@ -74,14 +73,7 @@ export class HomeScreen extends PureComponent {
   };
 
   onChange = search => {
-    this.timeout && clearTimeout(this.timeout);
-    this.setState({ search, imageList: [] }, () => {
-      if (search.length > 0)
-        this.timeout = setTimeout(() => {
-          this.page = 1;
-          this.search();
-        }, 500);
-    });
+    this.setState({ search, imageList: [] });
   };
 
   search = async (loadMore = false) => {
@@ -215,6 +207,12 @@ export class HomeScreen extends PureComponent {
             value={search}
             onChangeText={text => this.onChange(text)}
             returnKeyType={'search'}
+            onEndEditing={() => {
+              if (search.length > 0) {
+                this.page = 1;
+                this.search();
+              }
+            }}
           />
         </View>
         <ModalList
