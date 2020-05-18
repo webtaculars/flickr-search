@@ -18,6 +18,7 @@ import Feather from 'react-native-vector-icons/Feather';
 import ModalList from '../../components/common/ModalList';
 import { saveToDB, readFromDB } from '../../utils/offline';
 import constants from '../../constants';
+import NetInfo from '@react-native-community/netinfo';
 
 export class HomeScreen extends PureComponent {
   constructor(props) {
@@ -38,18 +39,24 @@ export class HomeScreen extends PureComponent {
 
   componentDidMount = async () => {
     const { navigation } = this.props;
+
     navigation.setOptions({
       headerRight: () => (
         <Button
           containerStyle={{
             width: 40,
-
             marginRight: 10,
-            backgroundColor: 'black',
           }}
-          buttonStyle={{ backgroundColor: '#f4511e' }}
+          buttonStyle={{ backgroundColor: 'transparent' }}
           titleStyle={{ fontSize: 18 }}
-          icon={<Fontisto name="nav-icon-grid" size={18} color="white" />}
+          icon={
+            <Fontisto
+              name="nav-icon-grid"
+              size={18}
+              color="white"
+              onPress={this.gridModalToggle}
+            />
+          }
           onPress={this.gridModalToggle}
         />
       ),
@@ -80,26 +87,35 @@ export class HomeScreen extends PureComponent {
   search = async (loadMore = false) => {
     const { search } = this.state;
     try {
-      let result = await searchImages(search, this.page, this.offset);
-
-      if (result.data && result.data.photos) {
-        loadMore
-          ? this.setState(prevState => ({
-              imageList: prevState.imageList.concat(result.data.photos.photo),
-            }))
-          : this.setState(
-              prevState => ({
-                imageList: result.data.photos.photo,
-                searchHistory: prevState.searchHistory.concat(search),
-              }),
-              () => {
-                saveToDB(search, this.state.imageList);
-                AsyncStorage.setItem(
-                  constants.SEARCH_HISTORY,
-                  JSON.stringify(this.state.searchHistory),
-                );
-              },
-            );
+      const { isConnected } = await NetInfo.fetch();
+      if (isConnected) {
+        let result = {};
+        result = await searchImages(search, this.page, this.offset);
+        if (result.data && result.data.photos) {
+          loadMore
+            ? this.setState(prevState => ({
+                imageList: prevState.imageList.concat(result.data.photos.photo),
+              }))
+            : this.setState(
+                prevState => ({
+                  imageList: result.data.photos.photo,
+                  searchHistory: prevState.searchHistory.concat(search),
+                }),
+                () => {
+                  saveToDB(search, this.state.imageList);
+                  AsyncStorage.setItem(
+                    constants.SEARCH_HISTORY,
+                    JSON.stringify(this.state.searchHistory),
+                  );
+                },
+              );
+        }
+      } else {
+        let savedResult = await readFromDB(search);
+        let imageList = JSON.parse(JSON.stringify(savedResult[0])).result;
+        this.setState({
+          imageList: JSON.parse(imageList),
+        });
       }
     } catch (e) {
       alert('API not reachable');
