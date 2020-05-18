@@ -213,6 +213,19 @@ export class HomeScreen extends PureComponent {
                 this.search();
               }
             }}
+            rightIcon={
+              <Fontisto
+                name="search"
+                size={24}
+                color={constants.Colors.theme}
+                onPress={() => {
+                  if (search.length > 0) {
+                    this.page = 1;
+                    this.search();
+                  }
+                }}
+              />
+            }
           />
         </View>
         <ModalList
