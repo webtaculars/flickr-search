@@ -257,7 +257,9 @@ export class HomeScreen extends PureComponent {
             keyExtractor={this.keyExtractorHistory}
             data={searchHistory}
             renderItem={this.renderHistory}
-            contentContainerStyle={{}}
+            contentContainerStyle={{
+              flexDirection: 'column-reverse',
+            }}
           />
         )}
       </View>
